@@ -13,3 +13,11 @@ X_b = np.c_[np.ones(len(X)), X]
 # 计算回归系数
 theta = np.linalg.inv(X_b.T @ X_b) @ X_b.T @ y
 
+ntercept = theta[0][0]
+coefs = theta[1:].flatten()
+
+print("截距 =", intercept)
+print("X1系数 =", coefs[0])
+print("X2系数 =", coefs[1])
+print("X3系数 =", coefs[2])
+print("X4系数 =", coefs[3])
