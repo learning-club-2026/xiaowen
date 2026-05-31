@@ -1,0 +1,17 @@
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+
+while True:
+ word1=input("请输入第一个词：")
+ if word1 == "exit":
+     break
+ word2=input("请输入第二个词：")
+
+ # 生成词向量
+ embedding1 = model.encode(word1)
+ embedding2 = model.encode(word2)
+
+ # 计算相似度
+ similarity = model.similarity(embedding1, embedding2)
+ print(f"两个词的相似度为{similarity.item():.4f}")
