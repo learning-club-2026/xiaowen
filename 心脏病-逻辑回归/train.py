@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc, classification_report
 import pandas as pd
 from setting import *
-from data import load_and_preprocess
+from 房价预测.模型训练.data import load_and_preprocess
 from model import create_model
 
 # 1. 数据加载

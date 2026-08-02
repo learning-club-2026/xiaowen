@@ -1,11 +1,12 @@
-# 模型训练
+# 训练过程
 from __future__ import annotations
 
 import os
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
-from data import load_and_preprocess
+from 房价预测.模型训练.data import load_and_preprocess
 from model import LinearRegression
 from setting import (
     BATCH_SIZE,
@@ -21,6 +22,7 @@ def train() -> None:
     data = load_and_preprocess()
     X_train, X_test = data["X_train"], data["X_test"]
     y_train, y_test = data["y_train"], data["y_test"]
+    X_final_test = data["X_final_test"]   # 用于最终提交
 
     # 2. 初始化模型
     model = LinearRegression(
@@ -58,7 +60,6 @@ def train() -> None:
         train_loss, train_acc = model.evaluate(X_train, y_train)
         test_loss, test_acc = model.evaluate(X_test, y_test)
 
-        # 记录数据
         epochs.append(epoch)
         train_losses.append(train_loss)
         test_losses.append(test_loss)
@@ -72,11 +73,12 @@ def train() -> None:
                 f"{train_acc:>9.2f}% | {test_acc:>9.2f}%\n"
             )
 
-        # 控制台输出
-        print(
-            f"{epoch:>6} | {train_loss:>12.4f} | {test_loss:>12.4f} | "
-            f"{train_acc:>9.2f}% | {test_acc:>9.2f}%"
-        )
+        # 控制台输出（每10个epoch打印一次，避免刷屏）
+        if epoch % 10 == 0 or epoch == 1:
+            print(
+                f"{epoch:>6} | {train_loss:>12.4f} | {test_loss:>12.4f} | "
+                f"{train_acc:>9.2f}% | {test_acc:>9.2f}%"
+            )
 
     # 8. 最终评估
     y_test_pred = model.predict(X_test)
@@ -120,30 +122,28 @@ def train() -> None:
     plt.figure(figsize=(12, 8))
     plt.plot(epochs, train_accs, label="Train", color="#1f77b4", linewidth=2)
     plt.plot(epochs, test_accs, label="Test", color="#d62728", linewidth=2)
-    plt.title("Train vs Test Accuracy", fontsize=14, pad=15)
+    plt.title("Train vs Test R2 Score (%)", fontsize=14, pad=15)
     plt.xlabel("Epoch", fontsize=12)
     plt.ylabel("R2 Accuracy (%)", fontsize=12)
     plt.legend(loc="lower right")
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    acc_path = os.path.join(FIGURE_SAVE_DIR, "accuracy.png")
-    plt.savefig(acc_path, dpi=150)
+    plt.savefig(os.path.join(FIGURE_SAVE_DIR, "accuracy.png"), dpi=150)
     plt.close()
 
-    # 12. 绘制 Loss 曲线
+    # 12. 绘制 Loss 曲线（对数尺度）
     plt.figure(figsize=(12, 8))
     plt.plot(epochs, train_losses, label="Train Loss", color="#1f77b4", linewidth=2)
     plt.plot(epochs, test_losses, label="Test Loss", color="#d62728", linewidth=2)
-    plt.title("Train vs Test Loss", fontsize=14, pad=15)
+    plt.yscale('log')
+    plt.title("Train vs Test Loss (Log Scale)", fontsize=14, pad=15)
     plt.xlabel("Epoch", fontsize=12)
-    plt.ylabel("MSE Loss", fontsize=12)
+    plt.ylabel("MSE Loss (log)", fontsize=12)
     plt.legend(loc="upper right")
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    loss_path = os.path.join(FIGURE_SAVE_DIR, "loss.png")
-    plt.savefig(loss_path, dpi=150)
+    plt.savefig(os.path.join(FIGURE_SAVE_DIR, "loss.png"), dpi=150)
     plt.close()
 
 
-if __name__ == "__main__":
-    train()
+train()
