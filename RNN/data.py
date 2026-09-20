@@ -43,7 +43,7 @@ def get_dataloaders(config):
     train_df['label'] = train_df['label'].apply(map_label)
     test_df['label']  = test_df['label'].apply(map_label)
 
-    # 截取子集（先跑通，确认没问题后可删掉这两行用全量）
+    # 截取子集（数据量太大了，只取一部分）
     train_df = train_df.head(2000)
     test_df  = test_df.head(500)
 
