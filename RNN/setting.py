@@ -2,7 +2,7 @@ import torch
 
 class Config:
     # BERT
-    bert_model_name = 'bert-base-uncased'
+    bert_model_name = 'prajjwal1/bert-tiny'    
     max_seq_len = 128
 
     # RNN
@@ -12,10 +12,10 @@ class Config:
 
     # Training
     batch_size = 32
-    epochs = 3
+    epochs = 5
     learning_rate = 2e-5
 
-    # Label mapping: 0~4 stars -> 3 classes (negative, neutral, positive)
+    # Label mapping: 1~2星->负(0), 3星->中(1), 4~5星->正(2)
     num_classes = 3
 
     # Device
