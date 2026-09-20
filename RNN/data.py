@@ -1,59 +1,75 @@
+import os
 import torch
+import pandas as pd
 from torch.utils.data import DataLoader, Dataset
-from data import load_dataset
 from transformers import BertTokenizer
-from setting import Config  
+
+
+def map_label(star):
+    """CSV 里是 1~5 星，映射为三分类：负(0) / 中(1) / 正(2)"""
+    if star <= 2:
+        return 0
+    elif star == 3:
+        return 1
+    else:
+        return 2
 
 
 class YelpDataset(Dataset):
-    def __init__(self, hf_dataset):
-        self.dataset = hf_dataset
+    def __init__(self, encodings, labels):
+        self.encodings = encodings
+        self.labels = labels
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.labels)
 
     def __getitem__(self, idx):
-        item = self.dataset[idx]
-        return {
-            'input_ids': item['input_ids'],
-            'attention_mask': item['attention_mask'],
-            'label': item['label']
-        }
+        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        item['label'] = torch.tensor(self.labels[idx])
+        return item
+
 
 def get_dataloaders(config):
-    # 加载数据集
-    dataset = load_dataset('yelp_review_full')
+    # CSV 文件和 data.py 在同一目录
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    train_path = os.path.join(current_dir, 'train.csv')
+    test_path  = os.path.join(current_dir, 'test.csv')
 
-    # 映射标签
-    def preprocess(example):
-        example['label'] = map_label(example['label'])
-        return example
-    dataset = dataset.map(preprocess)
+    # 读取 CSV（无表头，两列：label, text）
+    train_df = pd.read_csv(train_path, header=None, names=['label', 'text'])
+    test_df  = pd.read_csv(test_path,  header=None, names=['label', 'text'])
 
-    # 分词器
+    # 标签映射：1~5 星 -> 0/1/2
+    train_df['label'] = train_df['label'].apply(map_label)
+    test_df['label']  = test_df['label'].apply(map_label)
+
+    # 截取子集（先跑通，确认没问题后可删掉这两行用全量）
+    train_df = train_df.head(2000)
+    test_df  = test_df.head(500)
+
+    print(f"训练样本数: {len(train_df)}, 测试样本数: {len(test_df)}")
+    print(f"标签分布(训练集):\n{train_df['label'].value_counts().sort_index()}")
+
+    # 分词
     tokenizer = BertTokenizer.from_pretrained(config.bert_model_name)
 
-    def tokenize_function(examples):
-        return tokenizer(
-            examples['text'],
-            truncation=True,
-            padding='max_length',
-            max_length=config.max_seq_len,
-            return_tensors=None
-        )
+    train_encodings = tokenizer(
+        train_df['text'].tolist(),
+        truncation=True,
+        padding='max_length',
+        max_length=config.max_seq_len
+    )
+    test_encodings = tokenizer(
+        test_df['text'].tolist(),
+        truncation=True,
+        padding='max_length',
+        max_length=config.max_seq_len
+    )
 
-    train_data = dataset['train'].map(tokenize_function, batched=True)
-    test_data = dataset['test'].map(tokenize_function, batched=True)
-
-    # 设置张量格式
-    train_data.set_format(type='torch', columns=['input_ids', 'attention_mask', 'label'])
-    test_data.set_format(type='torch', columns=['input_ids', 'attention_mask', 'label'])
-
-
-    train_dataset = YelpDataset(train_data)
-    test_dataset = YelpDataset(test_data)
+    train_dataset = YelpDataset(train_encodings, train_df['label'].tolist())
+    test_dataset  = YelpDataset(test_encodings,  test_df['label'].tolist())
 
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
+    test_loader  = DataLoader(test_dataset,  batch_size=config.batch_size, shuffle=False)
 
     return train_loader, test_loader
