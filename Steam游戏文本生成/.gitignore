@@ -1,0 +1,8 @@
+# 数据集与训练生成的模型保留在本地
+/steam_games*.csv
+/训练过程/best_model/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+.DS_Store
